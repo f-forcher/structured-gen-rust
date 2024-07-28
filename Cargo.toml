@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.86"
+regex-automata = "0.4.7"
+
+[patch.crates-io]
+regex-automata = { git = 'https://github.com/f-forcher/regex', branch = 'expose-state-iter' }
