@@ -4,6 +4,8 @@ use regex_automata::{
     Anchored, Input,
 };
 
+pub mod util;
+
 fn main() -> Result<()> {
     let dfa = dense::DFA::new(r"[0-9]*\.?[0-9]*")?;
     let haystack = "1.34";

@@ -6,6 +6,11 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 regex-automata = "0.4.7"
+rand = "0.8.5" # TODO put it in dev-dependencies after workspace refactor
 
 [patch.crates-io]
 regex-automata = { git = 'https://github.com/f-forcher/regex', branch = 'expose-state-iter' }
+
+[dev-dependencies]
+insta = "1.39.0"
+
