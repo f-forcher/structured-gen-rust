@@ -1,8 +1,10 @@
-use regex_automata::{dfa::{dense, Automaton}, Anchored, Input};
 use anyhow::Result;
+use regex_automata::{
+    dfa::{dense, Automaton},
+    Anchored, Input,
+};
 
-fn main() -> Result<()>  {
-
+fn main() -> Result<()> {
     let dfa = dense::DFA::new(r"[0-9]*\.?[0-9]*")?;
     let haystack = "1.34";
 
@@ -18,8 +20,7 @@ fn main() -> Result<()>  {
 
     println!("There are {} states in this dfa", states_num);
 
-    let states_ids: Vec<_> = dfa.tt.states()
-        .map(|state| state.id()).collect();
+    let states_ids: Vec<_> = dfa.tt.states().map(|state| state.id()).collect();
 
     println!("Their IDs are {:?}", states_ids);
 
@@ -29,5 +30,5 @@ fn main() -> Result<()>  {
     state = dfa.next_eoi_state(state);
     assert!(dfa.is_match_state(state));
 
-    return Ok(())
+    Ok(())
 }
