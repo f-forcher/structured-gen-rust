@@ -34,18 +34,10 @@ env:
 
 jobs:
   clippy:
-    name: cargo clippy
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
-    - name: Clippy
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features --tests --benches --examples -- -D warnings
+      - uses: actions/checkout@v4
+      - run: cargo clippy -- --deny warnings
 
   check-format:
     name: cargo fmt
