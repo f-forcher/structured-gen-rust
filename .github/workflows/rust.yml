@@ -37,17 +37,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo clippy -- --deny warnings
+      - name: Check with clippy
+        run: cargo clippy -- --deny warnings
 
   check-format:
     name: cargo fmt
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt
-    - name: rustfmt
+    - name: Check rust formatting
       run: cargo fmt --all -- --check
   
   test:
@@ -55,6 +53,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-    - name: Check
+    - name: Run tests
       run: cargo test --all-features
