@@ -34,7 +34,7 @@ env:
 
 jobs:
   clippy:
-  name: cargo clippy
+    name: cargo clippy
     runs-on: ubuntu-latest
     needs: check
     steps:
