@@ -6,6 +6,14 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 regex-automata = "0.4.7"
+rand = {version="0.8.5", features=["small_rng"]} # TODO put it in dev-dependencies after workspace refactor
 
 [patch.crates-io]
+# The Rust regex-automata crate has been forked and patched
+# to expose the internals of automata states, that are not
+# available through its public API.
 regex-automata = { git = 'https://github.com/f-forcher/regex', branch = 'expose-state-iter' }
+
+[dev-dependencies]
+insta = "1.39.0"
+

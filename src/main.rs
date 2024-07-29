@@ -3,6 +3,7 @@ use regex_automata::{
     dfa::{dense, Automaton},
     Anchored, Input,
 };
+use structured_gen_rust::utils::{DeterministicModel, LangModel};
 
 fn main() -> Result<()> {
     let dfa = dense::DFA::new(r"[0-9]*\.?[0-9]*")?;
@@ -29,6 +30,31 @@ fn main() -> Result<()> {
     // the end of a haystack.
     state = dfa.next_eoi_state(state);
     assert!(dfa.is_match_state(state));
+
+    /////// Mock LLM test with pattern
+    let vocabulary: Vec<String> = ["A", ".", "42", "B", ".2", "1"]
+        .into_iter()
+        .map(|s| s.to_owned())
+        .collect();
+    let mut determ = DeterministicModel::new(vocabulary);
+
+    let mut previous_samples = String::new();
+    let test_cyclic_out = determ.sample_n_tokens(15, &mut previous_samples, None);
+    println!("Test cyclic mockllm: {:?}", test_cyclic_out);
+
+    /////// Mock LLM test
+    let vocabulary: Vec<String> = ["A", "3", ".", "42", "B", ".2", "1"]
+        .into_iter()
+        .map(|s| s.to_owned())
+        .collect();
+    let mut determ = DeterministicModel::new(vocabulary);
+
+    let mut previous_samples2 = String::new();
+
+    let temp = &String::from(r"^([0-9]*)?\.?[0-9]*$");
+    let pattern2 = Some(temp);
+    let test_cyclic_out2 = determ.sample_n_tokens(15, &mut previous_samples2, pattern2);
+    println!("Test cyclic mockllm: {:?}", test_cyclic_out2);
 
     Ok(())
 }
