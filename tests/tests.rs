@@ -1,5 +1,5 @@
 use rand::{rngs::SmallRng, SeedableRng};
-use structured_gen_rust::utils::{ConstsLogitsModel, DeterministicModel, LangModel};
+use structured_gen_rust::utils::{ConstsLogitsModel, DeterministicModel, LangModel, MaskingAlgo};
 
 #[test]
 fn unmasked_output() {
@@ -12,7 +12,7 @@ fn unmasked_output() {
     let mut previous_samples = String::new();
 
     let pattern = None;
-    let out = determ.sample_n_tokens(15, &mut previous_samples, pattern);
+    let out = determ.sample_n_tokens(15, &mut previous_samples, MaskingAlgo::Naive { pattern });
 
     insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
 
@@ -24,8 +24,9 @@ fn unmasked_output() {
 
     let mut previous_samples = String::new();
 
-    let pattern2 = None;
-    let out2 = const_logits.sample_n_tokens(15, &mut previous_samples, pattern2);
+    let pattern = None;
+    let out2 =
+        const_logits.sample_n_tokens(15, &mut previous_samples, MaskingAlgo::Naive { pattern });
 
     insta::assert_snapshot!(out2, @"3...2423.42A33A.1.2");
 }
@@ -41,7 +42,7 @@ fn masked_output() {
 
     let binding = &String::from(r"^([0-9]*)?\.?[0-9]*$");
     let pattern = Some(binding);
-    let out = determ.sample_n_tokens(15, &mut previous_samples2, pattern);
+    let out = determ.sample_n_tokens(15, &mut previous_samples2, MaskingAlgo::Naive { pattern });
 
     insta::assert_snapshot!(out, @"33.421113342421113");
 
@@ -54,8 +55,9 @@ fn masked_output() {
     let mut previous_samples = String::new();
 
     let binding = &String::from(r"^([0-9]*)?\.?[0-9]*$");
-    let pattern2 = Some(binding);
-    let out2 = const_logits.sample_n_tokens(15, &mut previous_samples, pattern2);
+    let pattern = Some(binding);
+    let out2 =
+        const_logits.sample_n_tokens(15, &mut previous_samples, MaskingAlgo::Naive { pattern });
 
     insta::assert_snapshot!(out2, @"3.3142334233334211");
 }

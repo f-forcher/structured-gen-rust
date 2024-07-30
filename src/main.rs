@@ -3,7 +3,7 @@ use regex_automata::{
     dfa::{dense, Automaton},
     Anchored, Input,
 };
-use structured_gen_rust::utils::{DeterministicModel, LangModel};
+use structured_gen_rust::utils::{DeterministicModel, LangModel, MaskingAlgo};
 
 fn main() -> Result<()> {
     let dfa = dense::DFA::new(r"[0-9]*\.?[0-9]*")?;
@@ -39,7 +39,11 @@ fn main() -> Result<()> {
     let mut determ = DeterministicModel::new(vocabulary);
 
     let mut previous_samples = String::new();
-    let test_cyclic_out = determ.sample_n_tokens(15, &mut previous_samples, None);
+    let test_cyclic_out = determ.sample_n_tokens(
+        15,
+        &mut previous_samples,
+        MaskingAlgo::Naive { pattern: None },
+    );
     println!("Test cyclic mockllm: {:?}", test_cyclic_out);
 
     /////// Mock LLM test
@@ -52,8 +56,9 @@ fn main() -> Result<()> {
     let mut previous_samples2 = String::new();
 
     let temp = &String::from(r"^([0-9]*)?\.?[0-9]*$");
-    let pattern2 = Some(temp);
-    let test_cyclic_out2 = determ.sample_n_tokens(15, &mut previous_samples2, pattern2);
+    let pattern = Some(temp);
+    let test_cyclic_out2 =
+        determ.sample_n_tokens(15, &mut previous_samples2, MaskingAlgo::Naive { pattern });
     println!("Test cyclic mockllm: {:?}", test_cyclic_out2);
 
     Ok(())
