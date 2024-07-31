@@ -1,5 +1,5 @@
 use rand::{rngs::SmallRng, SeedableRng};
-use structured_gen_rust::utils::{ConstsLogitsModel, DeterministicModel, LangModel, MaskingAlgo};
+use structured_gen_rust::util::{ConstsLogitsModel, DeterministicModel, LangModel, MaskingAlgo};
 
 #[test]
 fn unmasked_output() {
@@ -19,8 +19,7 @@ fn unmasked_output() {
     // ConstsLogitsModel
     let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
     let rng = SmallRng::seed_from_u64(42);
-    let weights = vec![1.0; vocabulary.len()];
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, &weights[..], rng);
+    let mut const_logits = ConstsLogitsModel::new(vocabulary, rng);
 
     let mut previous_samples = String::new();
 
@@ -50,7 +49,7 @@ fn masked_output() {
     let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
     let rng = SmallRng::seed_from_u64(42);
     let weights = vec![1.0; vocabulary.len()];
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, &weights[..], rng);
+    let mut const_logits = ConstsLogitsModel::new_with_weights(vocabulary, &weights[..], rng);
 
     let mut previous_samples = String::new();
 
