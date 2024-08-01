@@ -237,7 +237,7 @@ pub fn sample_model(
     masking_config: &MaskingAlgorithmConfig,
 ) -> Result<String> {
     let algo_state =
-        MaskingAlgoState::from_config(&masking_config, input_prompt, model.get_vocabulary());
+        MaskingAlgoState::from_config(masking_config, input_prompt, model.get_vocabulary());
     let mut text_buffer = input_prompt.to_owned();
 
     model.sample_multiple_tokens(max_tokens, &mut text_buffer, algo_state);
@@ -270,7 +270,7 @@ fn naive_mask_from_pattern(vocabulary: &[Token], previous_samples: &str, pattern
 /// Precompute the states map on the given `vocabulary` of tokens.
 ///
 /// **Algorithm 4** from the paper.
-pub fn map_states_to_vocab(fsm: &dense::DFA<Vec<u32>>, vocabulary: &[Token]) -> MapAutomataStates {
+fn map_states_to_vocab(fsm: &dense::DFA<Vec<u32>>, vocabulary: &[Token]) -> MapAutomataStates {
     let mut map = MapAutomataStates::new();
     for state in fsm.tt.states() {
         map.insert(state.id(), Default::default());
