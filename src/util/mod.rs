@@ -7,96 +7,8 @@ use rand::{
     prelude::Distribution,
     Rng,
 };
-use regex_automata::dfa::Automaton;
 
-use crate::{naive_mask_from_pattern, Mask, MaskingAlgo, Token};
-
-// /// Return this end-of-stream token if no other choices are allowed.
-static EOS_TOKEN: &str = "<EOS>";
-
-pub trait LangModel {
-    fn sample_one_token(&mut self, mask: Mask) -> &str;
-
-    fn get_vocabulary(&self) -> &Vec<Token>;
-
-    fn sample_multiple_tokens(
-        &mut self,
-        max_tokens: usize,
-        previous_samples: &mut String,
-        masking_algo: MaskingAlgo,
-    ) -> String {
-        match masking_algo {
-            MaskingAlgo::Naive { ref pattern } => {
-                for _i in 0..max_tokens {
-                    let mut mask = Mask::ones(self.vocabulary_size());
-                    if let Some(pattern) = pattern {
-                        mask = naive_mask_from_pattern(
-                            self.get_vocabulary(),
-                            previous_samples,
-                            pattern,
-                        );
-                    }
-                    println!("naive mask: {:?}", mask);
-                    let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    if next_token == EOS_TOKEN {
-                        break;
-                    } else {
-                        previous_samples.push_str(&next_token);
-                    }
-                }
-            }
-            MaskingAlgo::CacheAutomataStates {
-                ref map,
-                fsm,
-                current_state,
-            } => {
-                println!("Map {:?}", map);
-                println!("State {:?}", current_state);
-                for _i in 0..max_tokens {
-                    let mut mask = Mask::zeros(self.vocabulary_size());
-
-                    let vocab = self.get_vocabulary();
-
-                    for (idx, bit) in mask.inner.iter_mut().enumerate() {
-                        if map
-                            .get(current_state)
-                            .expect("key should exists for all states")
-                            .contains(&vocab[idx])
-                        {
-                            *bit = 1;
-                            println!("state {:?} contains {}", current_state, &vocab[idx]);
-                        } else {
-                            *bit = 0;
-                            println!("state {:?} does not contain {}", current_state, &vocab[idx]);
-                        }
-                    }
-                    println!();
-                    println!("Mask {:?}", mask);
-
-                    let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    if next_token == EOS_TOKEN {
-                        break;
-                    } else {
-                        previous_samples.push_str(&next_token);
-                    }
-
-                    // Advance dfa
-                    for &b in next_token.as_bytes().iter() {
-                        *current_state = fsm.next_state(*current_state, b);
-                    }
-                }
-            }
-        }
-
-        previous_samples.to_string()
-    }
-
-    fn vocabulary_size(&self) -> usize {
-        self.get_vocabulary().len()
-    }
-}
+use crate::{LangModel, Mask, Token, EOS_TOKEN};
 
 pub struct ConstsLogitsModel<R: Rng> {
     pub vocabulary: Vec<Token>,
@@ -127,7 +39,7 @@ impl<R: Rng> LangModel for ConstsLogitsModel<R> {
             .weights
             .iter()
             .enumerate()
-            .map(|(i, w)| (mask.inner[i] as f64) * w) // Apply masking
+            .map(|(i, w)| f64::from(mask.inner[i]) * w) // Apply masking
             .collect();
 
         self.dist = match WeightedIndex::new(new_weights) {
@@ -167,8 +79,6 @@ impl LangModel for DeterministicModel {
                 out_token = &self.vocabulary[cyclic_idx];
                 self.idx = (self.idx + 1) % self.vocabulary_size();
                 break;
-            } else {
-                continue;
             }
         }
 
