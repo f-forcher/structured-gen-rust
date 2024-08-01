@@ -34,6 +34,7 @@ env:
 
 jobs:
   clippy:
+    name: cargo clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +58,7 @@ jobs:
         run: cargo fmt --all -- --check
   
   test:
-    name: cargo test
+    name: cargo nextest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,4 +70,4 @@ jobs:
         uses: taiki-e/install-action@nextest
 
       - name: Run tests
-        run: cargo nextest run --all-features
+        run: cargo nextest run --all-features --profile ci
