@@ -4,9 +4,10 @@ use regex_automata::{
     dfa::{dense, Automaton},
     Anchored, Input,
 };
+
 use structured_gen_rust::{
     map_states_to_vocab,
-    util::{ConstsLogitsModel, DeterministicModel, LangModel, MaskingAlgo},
+    util::{ConstsLogitsModel, DeterministicModel, LangModel}, MaskingAlgo,
 };
 
 fn main() -> Result<()> {
@@ -36,6 +37,7 @@ fn main() -> Result<()> {
     assert!(dfa.is_match_state(state));
 
     /////// Mock LLM test no pattern
+    let max_tokens = 10;
     let vocabulary: Vec<String> = ["A", "3", ".", "42", "B", ".2", "1"]
         .into_iter()
         .map(|s| s.to_owned())
@@ -43,8 +45,8 @@ fn main() -> Result<()> {
     let mut determ = DeterministicModel::new(vocabulary);
 
     let mut previous_samples = String::new();
-    let test_cyclic_out = determ.sample_n_tokens(
-        50,
+    let test_cyclic_out = determ.sample_multiple_tokens(
+        max_tokens,
         &mut previous_samples,
         MaskingAlgo::Naive { pattern: None },
     );
@@ -64,10 +66,12 @@ fn main() -> Result<()> {
     // let simple_pattern = r"^A+B+$";
     let simple_pattern = r"^A?B*$";
 
-    let temp = &String::from(simple_pattern);
-    let pattern = Some(temp);
-    let test_cyclic_out2 =
-        determ.sample_n_tokens(50, &mut previous_samples2, MaskingAlgo::Naive { pattern });
+    let pattern = Some(simple_pattern);
+    let test_cyclic_out2 = determ.sample_multiple_tokens(
+        max_tokens,
+        &mut previous_samples2,
+        MaskingAlgo::Naive { pattern },
+    );
     println!("Test cyclic mockllm with pattern: {:?}", test_cyclic_out2);
 
     /////// Mock LLM test
@@ -95,7 +99,7 @@ fn main() -> Result<()> {
         fsm: &dfa,
         current_state: &mut state,
     };
-    let test_cyclic_out2 = rand_llm.sample_n_tokens(15, &mut previous_samples2, algo);
+    let test_cyclic_out2 = rand_llm.sample_multiple_tokens(max_tokens, &mut previous_samples2, algo);
     println!("Test fast map: {:?}", test_cyclic_out2);
 
     Ok(())

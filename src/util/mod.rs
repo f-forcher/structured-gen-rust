@@ -1,52 +1,33 @@
+/*!
+    Utilities for testing structured generation without the overhead of running a "real" Large Language Model.
+*/
+
 use rand::{
     distributions::{WeightedError, WeightedIndex},
     prelude::Distribution,
     Rng,
 };
-use regex_automata::{
-    dfa::{dense, Automaton},
-    util::primitives::StateID,
-};
+use regex_automata::dfa::Automaton;
 
-use crate::{naive_mask_from_pattern, MapAutomataStates, Mask, Token};
+use crate::{naive_mask_from_pattern, Mask, MaskingAlgo, Token};
 
 // /// Return this end-of-stream token if no other choices are allowed.
 static EOS_TOKEN: &str = "<EOS>";
-
-/// Configuration to select the token masking algorithm
-/// to select the valid next tokens.
-pub enum MaskingAlgo<'a> {
-    /// Use naive O(N) pattern matching algorithm, i.e. for every
-    /// token in the vocabulary check if the whole output would still
-    /// validate the pattern. This requires O(N) steps where N
-    /// is the total output sequence length.
-    Naive { pattern: Option<&'a String> },
-
-    /// The algorithm from arxiv.org/abs/2307.09702, precomputing the
-    /// token vocabulary with a hashmap from the pattern FSM states
-    /// to valid tokens. The masking step is now O(1), indepentent
-    /// of the current output sequence length.
-    CacheAutomataStates {
-        map: MapAutomataStates,
-        fsm: &'a dense::DFA<Vec<u32>>,
-        current_state: &'a mut StateID,
-    }, // TODO add the precomputed state here ie MapFSM(HashMap...)
-}
 
 pub trait LangModel {
     fn sample_one_token(&mut self, mask: Mask) -> &str;
 
     fn get_vocabulary(&self) -> &Vec<Token>;
 
-    fn sample_n_tokens(
+    fn sample_multiple_tokens(
         &mut self,
-        num_tokens: usize,
+        max_tokens: usize,
         previous_samples: &mut String,
         masking_algo: MaskingAlgo,
     ) -> String {
         match masking_algo {
             MaskingAlgo::Naive { ref pattern } => {
-                for _i in 0..num_tokens {
+                for _i in 0..max_tokens {
                     let mut mask = Mask::ones(self.vocabulary_size());
                     if let Some(pattern) = pattern {
                         mask = naive_mask_from_pattern(
@@ -57,12 +38,12 @@ pub trait LangModel {
                     }
                     println!("naive mask: {:?}", mask);
                     let next_token: String = self.sample_one_token(mask).to_owned();
-                    previous_samples.push_str(&next_token);
-                    // if next_token == EOS_TOKEN {
-                    //     break;
-                    // } else {
-                    //     previous_samples.push_str(&next_token);
-                    // }
+
+                    if next_token == EOS_TOKEN {
+                        break;
+                    } else {
+                        previous_samples.push_str(&next_token);
+                    }
                 }
             }
             MaskingAlgo::CacheAutomataStates {
@@ -72,7 +53,7 @@ pub trait LangModel {
             } => {
                 println!("Map {:?}", map);
                 println!("State {:?}", current_state);
-                for _i in 0..num_tokens {
+                for _i in 0..max_tokens {
                     let mut mask = Mask::zeros(self.vocabulary_size());
 
                     let vocab = self.get_vocabulary();
@@ -94,13 +75,6 @@ pub trait LangModel {
                     println!("Mask {:?}", mask);
 
                     let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    // if i == num_tokens - 1 {
-                    //     // This is the last token, must walk end of
-                    //     *current_state = fsm.next_eoi_state(*current_state);
-                    // } else {
-                    //     *current_state = fsm.start_state_forward(&Input::new(&next_token)).unwrap();
-                    // }
 
                     if next_token == EOS_TOKEN {
                         break;
@@ -155,9 +129,7 @@ impl<R: Rng> LangModel for ConstsLogitsModel<R> {
             .enumerate()
             .map(|(i, w)| (mask.inner[i] as f64) * w) // Apply masking
             .collect();
-        // TODO possibility of optimization using update_weights
-        // if few removed tokens
-        // TODO handle error
+
         self.dist = match WeightedIndex::new(new_weights) {
             Ok(weighted_index) => weighted_index,
             // If no token is allowed, return end-of-stream token.
@@ -175,7 +147,7 @@ impl<R: Rng> LangModel for ConstsLogitsModel<R> {
 /// Simple mock language model that just
 /// iterates cyclically over its vocabulary.
 pub struct DeterministicModel {
-    pub vocabulary: Vec<Token>,
+    vocabulary: Vec<Token>,
     idx: usize,
 }
 

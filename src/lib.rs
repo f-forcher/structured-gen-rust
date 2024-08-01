@@ -1,11 +1,15 @@
 /*!
     Main lib module containing the routines to structurally generate text from LLMs.
 */
-use anyhow::Result;
-use regex_automata::dfa::{dense, Automaton};
-use std::collections::{HashMap, HashSet};
 
-use regex_automata::{meta::Regex, util::primitives::StateID, Input};
+use anyhow::Result;
+use regex_automata::{
+    dfa::{dense, Automaton},
+    meta::Regex,
+    util::primitives::StateID,
+    Input,
+};
+use std::collections::{HashMap, HashSet};
 
 pub mod util;
 
@@ -19,6 +23,26 @@ pub struct Mask {
     /// A value of `1` means the token at the corresponding position in the dictionary is allowed,
     ///  and `0` that the token is forbidden.
     pub inner: Vec<u8>,
+}
+
+/// Configuration to select the token masking algorithm
+/// to select the valid next tokens.
+pub enum MaskingAlgo<'a> {
+    /// Use naive O(N) pattern matching algorithm, i.e. for every
+    /// token in the vocabulary check if the whole output would still
+    /// validate the pattern. This requires O(N) steps where N
+    /// is the total output sequence length.
+    Naive { pattern: Option<&'a str> },
+
+    /// The algorithm from arxiv.org/abs/2307.09702, precomputing the
+    /// token vocabulary with a hashmap from the pattern FSM states
+    /// to valid tokens. The masking step is now O(1), indepentent
+    /// of the current output sequence length.
+    CacheAutomataStates {
+        map: MapAutomataStates,
+        fsm: &'a dense::DFA<Vec<u32>>,
+        current_state: &'a mut StateID,
+    }, // TODO add the precomputed state here ie MapFSM(HashMap...)
 }
 
 // TODO use proper newtypes enforcing invariants (no empty string token etc).
@@ -103,7 +127,7 @@ fn find_subsequences(fsm: &dense::DFA<Vec<u32>>, token: &Token) -> Result<Vec<St
     let mut all_subseqs = vec![];
 
     'states_loop: for state in fsm.tt.states() {
-        let mut state_sequence = vec![];
+        let mut state_sequence: StateSequence = vec![];
         let mut curr_state = state.id();
 
         // Only keep the states that read token[0]
