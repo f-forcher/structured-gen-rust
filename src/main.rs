@@ -7,7 +7,8 @@ use regex_automata::{
 
 use structured_gen_rust::{
     map_states_to_vocab,
-    util::{ConstsLogitsModel, DeterministicModel, LangModel}, MaskingAlgo,
+    util::{ConstsLogitsModel, DeterministicModel, LangModel},
+    MaskingAlgo,
 };
 
 fn main() -> Result<()> {
@@ -99,7 +100,8 @@ fn main() -> Result<()> {
         fsm: &dfa,
         current_state: &mut state,
     };
-    let test_cyclic_out2 = rand_llm.sample_multiple_tokens(max_tokens, &mut previous_samples2, algo);
+    let test_cyclic_out2 =
+        rand_llm.sample_multiple_tokens(max_tokens, &mut previous_samples2, algo);
     println!("Test fast map: {:?}", test_cyclic_out2);
 
     Ok(())
