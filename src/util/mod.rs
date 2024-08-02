@@ -11,16 +11,16 @@ use rand::{
 
 use crate::{LangModel, Mask, Token, EOS_TOKEN};
 
-pub struct ConstsLogitsModel<R: Rng> {
+pub struct ConstLogitsModel<R: Rng> {
     pub vocabulary: Vec<Token>,
     pub dist: WeightedIndex<f64>,
     pub weights: Vec<f64>,
     rng: R,
 }
 
-impl<R: Rng> ConstsLogitsModel<R> {
+impl<R: Rng> ConstLogitsModel<R> {
     pub fn new_with_weights(vocabulary: Vec<Token>, weights: &[f64], rng: R) -> Self {
-        ConstsLogitsModel {
+        ConstLogitsModel {
             vocabulary,
             dist: WeightedIndex::new(weights).unwrap(),
             weights: weights.into(),
@@ -30,11 +30,11 @@ impl<R: Rng> ConstsLogitsModel<R> {
 
     pub fn new(vocabulary: Vec<Token>, rng: R) -> Self {
         let weights = vec![1.; vocabulary.len()];
-        ConstsLogitsModel::new_with_weights(vocabulary, &weights, rng)
+        ConstLogitsModel::new_with_weights(vocabulary, &weights, rng)
     }
 }
 
-impl<R: Rng> LangModel for ConstsLogitsModel<R> {
+impl<R: Rng> LangModel for ConstLogitsModel<R> {
     fn sample_one_token(&mut self, mask: Mask) -> &str {
         let new_weights: Vec<_> = self
             .weights

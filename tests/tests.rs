@@ -1,7 +1,7 @@
 use rand::{rngs::SmallRng, SeedableRng};
 use structured_gen_rust::{
     sample_model,
-    util::{ConstsLogitsModel, DeterministicModel},
+    util::{ConstLogitsModel, DeterministicModel},
     MaskingAlgorithmConfig,
 };
 
@@ -32,7 +32,7 @@ fn unmasked() {
 
     // ConstsLogitsModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, rng);
+    let mut const_logits = ConstLogitsModel::new(vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -64,7 +64,7 @@ fn naive_mask() {
 
     // ConstsLogitsModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, rng);
+    let mut const_logits = ConstLogitsModel::new(vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -96,7 +96,7 @@ fn indexed_fsm_mask() {
 
     // ConstsLogitsModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstsLogitsModel::new(vocabulary.clone(), rng);
+    let mut const_logits = ConstLogitsModel::new(vocabulary.clone(), rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -136,7 +136,7 @@ fn fsm_with_input_shorter() {
 
     // ConstsLogitsModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstsLogitsModel::new(vocabulary.clone(), rng);
+    let mut const_logits = ConstLogitsModel::new(vocabulary.clone(), rng);
 
     let out_rng = sample_model(
         &mut const_logits,
