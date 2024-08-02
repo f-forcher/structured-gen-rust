@@ -248,7 +248,7 @@ pub trait LangModel {
                     let next_token: String = self.sample_one_token(mask).to_owned();
 
                     debug!("Next token chosen: {next_token:?}");
-                    
+
                     if next_token == EOS_TOKEN {
                         info!("EOS token received returning earky: Generated {i} out of {max_tokens} max allowed");
                         break;

@@ -83,11 +83,14 @@ impl LangModel for DeterministicModel {
             }
         }
 
-        debug!("Next tokens allowed: {:?}", mask
-            .inner
-            .iter()
-            .enumerate()
-            .map(|(i, m)| (*m != 0).then(|| self.get_vocabulary()[i].clone())).filter_map(|x| x).collect::<Vec<_>>()
+        debug!(
+            "Next tokens allowed: {:?}",
+            mask.inner
+                .iter()
+                .enumerate()
+                .filter(|&(_i, m)| (*m != 0))
+                .map(|(i, _m)| self.get_vocabulary()[i].clone())
+                .collect::<Vec<_>>()
         );
 
         out_token
