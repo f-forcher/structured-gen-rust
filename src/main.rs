@@ -36,7 +36,7 @@ struct Cli {
     #[arg(short, long, default_value_t = String::from(r""))]
     input: String,
 
-    /// The regex pattern according to which the model output should conform.
+    /// The regex pattern to which the model output should conform.
     /// Usually you want to anchor it at both ends, i.e. `^...$`.
     /// Default is the float regex `^([0-9]*)?\.?[0-9]*$`
     #[arg(short, long, default_value_t = String::from(r"^([0-9]*)?\.?[0-9]*$"))]

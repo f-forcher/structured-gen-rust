@@ -66,7 +66,7 @@ Options:
           [default: ]
 
   -p, --pattern <PATTERN>
-          The regex pattern according to which the model output should conform. Usually you want to anchor 
+          The regex pattern to which the model output should conform. Usually you want to anchor 
           it at both ends, i.e. `^...$`. Default is the float regex `^([0-9]*)?\.?[0-9]*$`
 
           [default: ^([0-9]*)?\.?[0-9]*$]
@@ -116,10 +116,26 @@ about 0.04 seconds (on my machine):
     time cargo run --release -- -m deterministic -a indexed-fsm -n 10000 -v A B 3 . 45
     ```
 
-### Notes
-The `regex-automata` public API does not expose the internal states
-of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made and the internal exposed.
+## Benchmarks
+Benchmarks can be run by using the command `cargo bench`. 
+In `target/criterion/report/index.html` an HTML plot will be generated
+containing several plots and statistics.
 
-### Known issues:
+## Debug and logs
+Debug logs can be enabled by running with a debug profile (i.e. `cargo run` without the `--release` flag) and setting the `RUST_LOG` env variable.
+
+The log levels are, in order: `error`, `warn`, `info`, `debug`, `trace`.
+Set the `RUST_LOG` env variable to one of them to enable more (or
+less) detailed logging. Example:
+
+```
+RUST_LOG=debug cargo run -- -m deterministic -a indexed-fsm -g 500 -n 500
+```
+
+## Notes
+The `regex-automata` public API does not expose the internal states
+of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made and its internals exposed.
+
+## Known issues
 Using very large dictionaries may result in failure to produce the right output. The issue seems to be deterministic and independent of the
-specific algo used, only depending on the specific dictionary size. It may be connected to the `regex` crate internal implementation of FSM states.
+specific struct-gen algo used, only depending on the dictionary size. It could be connected to the `regex` crate internal implementation of FSM states.
