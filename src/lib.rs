@@ -376,7 +376,7 @@ fn map_states_to_vocab(fsm: &dense::DFA<Vec<u32>>, vocabulary: &[Token]) -> Inde
     for token in vocabulary {
         let subsequences = find_subsequences(fsm, token).unwrap();
         for sequence in subsequences {
-            debug_assert!(sequence.len() > 0);
+            debug_assert!(!sequence.is_empty());
             map.entry(sequence[0])
                 .and_modify(|tokens| {
                     tokens.insert(token.clone());
