@@ -3,7 +3,7 @@ use anyhow::Result;
 use rand::thread_rng;
 use structured_gen_rust::{
     sample_model,
-    util::{DeterministicModel, RandomSampleModel},
+    util::{generate_dict, DeterministicModel, RandomSampleModel},
     MaskingAlgorithmConfig,
 };
 
@@ -108,6 +108,8 @@ fn main() -> Result<()> {
     };
 
     println!("Model output: \"{output}\"");
+
+    println!("Test dict gen: \"{:?}\"", generate_dict(10000));
 
     Ok(())
 }
