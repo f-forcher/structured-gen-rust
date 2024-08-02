@@ -20,9 +20,9 @@ struct Cli {
     algo: AlgorithmSelector,
 
     /// The model vocabulary as a space separated list of words. Example:
-    /// 
+    ///
     /// -v A B 3 ...
-    /// 
+    ///
     /// If not present, the default vocabulary ["A", "3", ".", "42", "B", ".2", "1"]
     /// will be used.
     #[arg(short, long, value_parser, num_args = 1.., value_delimiter = ' ')]
