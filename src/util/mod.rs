@@ -20,16 +20,16 @@ pub struct RandomSampleModel<R: Rng> {
 }
 
 impl<R: Rng> RandomSampleModel<R> {
-    pub fn new_with_weights(vocabulary: Vec<Token>, weights: &[f64], rng: R) -> Self {
+    pub fn new_with_weights(vocabulary: &[Token], weights: &[f64], rng: R) -> Self {
         RandomSampleModel {
-            vocabulary,
+            vocabulary: vocabulary.to_vec(),
             dist: WeightedIndex::new(weights).unwrap(),
             weights: weights.into(),
             rng,
         }
     }
 
-    pub fn new(vocabulary: Vec<Token>, rng: R) -> Self {
+    pub fn new(vocabulary: &[Token], rng: R) -> Self {
         let weights = vec![1.; vocabulary.len()];
         RandomSampleModel::new_with_weights(vocabulary, &weights, rng)
     }
@@ -53,7 +53,7 @@ impl<R: Rng> LangModel for RandomSampleModel<R> {
         &self.vocabulary[self.dist.sample(&mut self.rng)]
     }
 
-    fn get_vocabulary(&self) -> &Vec<Token> {
+    fn get_vocabulary(&self) -> &[Token] {
         &self.vocabulary
     }
 }
@@ -66,8 +66,11 @@ pub struct DeterministicModel {
 }
 
 impl DeterministicModel {
-    pub fn new(vocabulary: Vec<Token>) -> Self {
-        DeterministicModel { vocabulary, idx: 0 }
+    pub fn new(vocabulary: &[Token]) -> Self {
+        DeterministicModel {
+            vocabulary: vocabulary.to_vec(),
+            idx: 0,
+        }
     }
 }
 
@@ -97,7 +100,7 @@ impl LangModel for DeterministicModel {
         out_token
     }
 
-    fn get_vocabulary(&self) -> &Vec<Token> {
+    fn get_vocabulary(&self) -> &[Token] {
         &self.vocabulary
     }
 }

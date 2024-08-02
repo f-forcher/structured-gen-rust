@@ -147,7 +147,7 @@ where
     fn sample_one_token(&mut self, mask: Mask) -> &str;
 
     /// Get the vocabulary of the `LangModel`, the list of all tokens.
-    fn get_vocabulary(&self) -> &Vec<Token>;
+    fn get_vocabulary(&self) -> &[Token];
 
     /// Sample up to `max_tokens` and append them to `text_buffer`. The selected
     /// masking algorithm will use `mask_algorithm` for its state.
