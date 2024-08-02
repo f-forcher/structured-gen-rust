@@ -165,7 +165,7 @@ where
                 sample_multiple_naive(self, max_tokens, text_buffer, pattern);
             }
             MaskingAlgoState::IndexedFSM { ref map, fsm } => {
-                sample_multiple_with_indexed_fsm(self, fsm, map, max_tokens, text_buffer);
+                sample_multiple_indexed_fsm(self, fsm, map, max_tokens, text_buffer);
             }
         }
     }
