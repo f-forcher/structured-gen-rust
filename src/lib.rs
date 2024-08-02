@@ -19,13 +19,11 @@ static EOS_TOKEN: &str = "<EOS>";
 
 /// The bitmask that is used to set to zero the LLM logits
 /// according to the given pattern.
+///
+/// A value of `1` means the token at the corresponding position in the dictionary is allowed,
+///  and `0` that the token is forbidden.
 #[derive(Default, Debug)]
 pub struct Mask {
-    /// For simplicity at the moment `u8` is used instead of
-    /// just a bit.
-    ///
-    /// A value of `1` means the token at the corresponding position in the dictionary is allowed,
-    ///  and `0` that the token is forbidden.
     pub inner: Vec<u8>,
 }
 
@@ -35,19 +33,20 @@ pub enum MaskingAlgorithmConfig<'a> {
     /// Do not perform structured generation, mask will allow all tokens
     NoMasking,
 
-    /// Use naive O(N) pattern matching algorithm, i.e. for every
-    /// token in the vocabulary check if the whole output would still
-    /// validate the pattern. This requires O(N) steps where N
-    /// is the total output sequence length.
+    /// Use naive `O(N)` pattern matching algorithm, i.e. check for each token
+    /// if the resulting completed output would still validate the pattern.
     Naive(Pattern<'a>),
 
-    /// The algorithm from arxiv.org/abs/2307.09702, precomputing the
-    /// token vocabulary with a hashmap from the pattern FSM states
+    /// The algorithm from the paper
+    /// [Efficient Guided Generation for Large Language Models](https://arxiv.org/abs/2307.09702),
+    /// precomputing the token vocabulary with a hashmap from the pattern FSM states
     /// to valid tokens. The masking step is now O(1), indepentent
     /// of the current output sequence length.
     IndexedFSM(Pattern<'a>),
 }
 
+/// A Finite State Machine with the state
+/// it is currently in.
 pub struct StatefulFSM {
     pub inner: dense::DFA<Vec<u32>>,
     pub current_state: StateID,
@@ -55,28 +54,24 @@ pub struct StatefulFSM {
 
 /// The internal state for the different masking algorithms.
 pub enum MaskingAlgoState<'a> {
-    /// Do not perform structured generation, mask will allow all tokens.
+    /// Do not perform structured generation, allow all tokens.
     /// No state necessary.
     NoMasking,
 
-    /// Use naive O(N) pattern matching algorithm, i.e. for every
-    /// token in the vocabulary check if the whole output would still
-    /// validate the pattern. This requires O(N) steps where N
-    /// is the total output sequence length.
+    /// The naive algorithm state contains the pattern to check each token at each step.
     Naive { pattern: Pattern<'a> },
 
-    /// The algorithm from arxiv.org/abs/2307.09702, precomputing the
-    /// token vocabulary with a hashmap from the pattern FSM states
-    /// to valid tokens. The masking step is now O(1), indepentent
-    /// of the current output sequence length.
+    /// The IndexedFSM algorithm state contains the index map constructed from the pattern and vocabulary,
+    /// and the state of the pattern's FSM.
     IndexedFSM {
         map: IndexedFSMStates,
         fsm: Box<StatefulFSM>,
-    }, // TODO add the precomputed state here ie MapFSM(HashMap...)
+    },
 }
 
 impl<'a> MaskingAlgoState<'a> {
-    fn from_config(
+    /// Create the appropriate state from the input configuration of each algorithm.
+    fn build_from_config(
         config: &MaskingAlgorithmConfig<'a>,
         input_prompt: &'a str,
         vocabulary: &[Token],
@@ -90,7 +85,7 @@ impl<'a> MaskingAlgoState<'a> {
                     .start_state_forward(&Input::new(input_prompt))
                     .expect("todo err");
 
-                // Advance fsm over previous input
+                // Advance fsm over previous existing input
                 for &b in input_prompt.as_bytes() {
                     state = fsm.next_state(state, b);
                 }
@@ -143,12 +138,19 @@ impl Mask {
     }
 }
 
-pub trait LangModel {
+pub trait LangModel
+where
+    Self: Sized,
+{
+    /// Sample one allowed token, given a `mask`. This
+    /// is the main method required in the trait implementors.
     fn sample_one_token(&mut self, mask: Mask) -> &str;
 
+    /// Get the vocabulary of the `LangModel`, the list of all tokens.
     fn get_vocabulary(&self) -> &Vec<Token>;
 
-    // Sample up to `max_tokens` and append them to `text_buffer`.
+    /// Sample up to `max_tokens` and append them to `text_buffer`. The selected
+    /// masking algorithm will use `mask_algorithm` for its state.
     fn sample_multiple_tokens(
         &mut self,
         max_tokens: usize,
@@ -157,119 +159,31 @@ pub trait LangModel {
     ) {
         match mask_algorithm {
             MaskingAlgoState::NoMasking => {
-                info!("Using NoMasking algorithm");
-
-                for _i in 0..max_tokens {
-                    // Identity mask
-                    let mask = Mask::ones(self.vocabulary_size());
-
-                    let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    if next_token == EOS_TOKEN {
-                        debug!("EOS token received, returning early from stream");
-                        break;
-                    } else {
-                        text_buffer.push_str(&next_token);
-                    }
-                }
+                sample_multiple_no_mask(self, max_tokens, text_buffer);
             }
             MaskingAlgoState::Naive { pattern } => {
-                info!("Using Naive algorithm");
-
-                for i in 0..max_tokens {
-                    let mask = naive_mask_from_pattern(self.get_vocabulary(), text_buffer, pattern);
-
-                    debug!(
-                        "Last few chars of text stream: {:?}",
-                        text_buffer
-                            .chars()
-                            .rev()
-                            .take(15)
-                            .collect::<Vec<_>>()
-                            .iter()
-                            .rev()
-                            .collect::<String>()
-                    );
-                    trace!("naive mask: {mask:?}");
-
-                    let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    debug!("Next token chosen: {next_token:?}");
-
-                    if next_token == EOS_TOKEN {
-                        info!("EOS token received returning earky: Generated {i} out of {max_tokens} max allowed");
-                        break;
-                    } else {
-                        text_buffer.push_str(&next_token);
-                    }
-                }
+                sample_multiple_naive(self, max_tokens, text_buffer, pattern);
             }
-            MaskingAlgoState::IndexedFSM { ref map, mut fsm } => {
-                info!("Using IndexedFSM algorithm");
-
-                let current_state = &mut fsm.current_state;
-                let fsm = fsm.inner;
-
-                trace!("State index map {:?}", map);
-                trace!("Current state {:?}", current_state);
-
-                for i in 0..max_tokens {
-                    let mut mask = Mask::zeros(self.vocabulary_size());
-
-                    let vocab = self.get_vocabulary();
-
-                    for (idx, bit) in mask.inner.iter_mut().enumerate() {
-                        if map
-                            .get(current_state)
-                            .expect("key should exists for all states")
-                            .contains(&vocab[idx])
-                        {
-                            *bit = 1;
-                            trace!("state {:?} contains {}", current_state, &vocab[idx]);
-                        } else {
-                            *bit = 0;
-                            trace!("state {:?} does not contain {}", current_state, &vocab[idx]);
-                        }
-                    }
-
-                    debug!(
-                        "Last few chars of text stream: {:?}",
-                        text_buffer
-                            .chars()
-                            .rev()
-                            .take(15)
-                            .collect::<Vec<_>>()
-                            .iter()
-                            .rev()
-                            .collect::<String>()
-                    );
-                    trace!("IndexedFSM mask: {mask:?}");
-
-                    let next_token: String = self.sample_one_token(mask).to_owned();
-
-                    debug!("Next token chosen: {next_token:?}");
-
-                    if next_token == EOS_TOKEN {
-                        info!("EOS token received returning earky: Generated {i} out of {max_tokens} max allowed");
-                        break;
-                    } else {
-                        text_buffer.push_str(&next_token);
-                    }
-
-                    // Advance FSM over the newly appended token
-                    for &b in next_token.as_bytes() {
-                        *current_state = fsm.next_state(*current_state, b);
-                    }
-                }
+            MaskingAlgoState::IndexedFSM { ref map, fsm } => {
+                sample_multiple_with_indexed_fsm(self, fsm, map, max_tokens, text_buffer);
             }
         }
     }
 
+    /// Get the total size of the `LangModel` vocabulary.
     fn vocabulary_size(&self) -> usize {
         self.get_vocabulary().len()
     }
 }
 
+/// Sample up to `max_tokens` from `model`, given the `input_prompt`.
+///
+/// If `masking_config` is configured with a pattern, at each step
+/// the model output (which starts with a copy of `input_prompt`) must
+/// satisfy the pattern expression.
+///
+/// Note that if at some step there are no valid tokens allowed, the model will send
+/// an end-of-stream special token and return early, generating less than `max_tokens`.
 pub fn sample_model(
     model: &mut impl LangModel,
     max_tokens: usize,
@@ -277,7 +191,7 @@ pub fn sample_model(
     masking_config: &MaskingAlgorithmConfig,
 ) -> Result<String> {
     let algo_state =
-        MaskingAlgoState::from_config(masking_config, input_prompt, model.get_vocabulary());
+        MaskingAlgoState::build_from_config(masking_config, input_prompt, model.get_vocabulary());
     let mut text_buffer = input_prompt.to_owned();
 
     model.sample_multiple_tokens(max_tokens, &mut text_buffer, algo_state);
@@ -285,14 +199,131 @@ pub fn sample_model(
     Ok(text_buffer)
 }
 
-/// Inefficient implementation of a mask
+/// Sample without masking, all tokens allowed.
+fn sample_multiple_no_mask(
+    model: &mut impl LangModel,
+    max_tokens: usize,
+    text_buffer: &mut String,
+) {
+    info!("Using NoMasking algorithm");
+
+    for _i in 0..max_tokens {
+        // Identity mask
+        let mask = Mask::ones(model.vocabulary_size());
+
+        let next_token: String = model.sample_one_token(mask).to_owned();
+
+        if next_token == EOS_TOKEN {
+            debug!("EOS token received, returning early from stream");
+            break;
+        } else {
+            text_buffer.push_str(&next_token);
+        }
+    }
+}
+
+/// Sample with the slow `Naive` algorithm, see [MaskingAlgorithmConfig::Naive]
+/// for more info.
+fn sample_multiple_naive(
+    model: &mut impl LangModel,
+    max_tokens: usize,
+    text_buffer: &mut String,
+    pattern: &str,
+) {
+    info!("Using Naive algorithm");
+
+    for i in 0..max_tokens {
+        let mask = naive_mask_from_pattern(model.get_vocabulary(), text_buffer, pattern);
+
+        debug!(
+            "Last few chars of text stream: {:?}",
+            text_buffer
+                .chars()
+                .rev()
+                .take(15)
+                .collect::<Vec<_>>()
+                .iter()
+                .rev()
+                .collect::<String>()
+        );
+        trace!("Naive mask: {mask:?}");
+
+        let next_token: String = model.sample_one_token(mask).to_owned();
+
+        debug!("Next token chosen: {next_token:?}");
+
+        if next_token == EOS_TOKEN {
+            info!(
+                "EOS token received returning earky: Generated {i} out of {max_tokens} max allowed"
+            );
+            break;
+        } else {
+            text_buffer.push_str(&next_token);
+        }
+    }
+}
+
+/// Sample using the efficient indexing FSM algorithm. See [MaskingAlgorithmConfig::IndexedFSM]
+/// for more info.
+fn sample_multiple_with_indexed_fsm(
+    model: &mut impl LangModel,
+    mut fsm: Box<StatefulFSM>,
+    map: &HashMap<StateID, HashSet<String>>,
+    max_tokens: usize,
+    text_buffer: &mut String,
+) {
+    info!("Using IndexedFSM algorithm");
+
+    let current_state = &mut fsm.current_state;
+    let fsm = fsm.inner;
+
+    trace!("State index map {:?}", map);
+    trace!("Current state {:?}", current_state);
+
+    for i in 0..max_tokens {
+        let mask = mask_from_pattern(model, map, current_state);
+
+        debug!(
+            "Last few chars of text stream: {:?}",
+            text_buffer
+                .chars()
+                .rev()
+                .take(15)
+                .collect::<Vec<_>>()
+                .iter()
+                .rev()
+                .collect::<String>()
+        );
+        trace!("IndexedFSM mask: {mask:?}");
+
+        let next_token: String = model.sample_one_token(mask).to_owned();
+
+        debug!("Next token chosen: {next_token:?}");
+
+        if next_token == EOS_TOKEN {
+            info!(
+                "EOS token received returning earky: Generated {i} out of {max_tokens} max allowed"
+            );
+            break;
+        } else {
+            text_buffer.push_str(&next_token);
+        }
+
+        // Advance FSM over the newly appended token
+        for &b in next_token.as_bytes() {
+            *current_state = fsm.next_state(*current_state, b);
+        }
+    }
+}
+
+/// Create a mask using the inefficient "naive" algorithm. See [MaskingAlgorithmConfig::Naive]
+/// for more info.
 fn naive_mask_from_pattern(vocabulary: &[Token], previous_samples: &str, pattern: &str) -> Mask {
     let mut mask = Mask::ones(vocabulary.len());
 
     for (i, tok) in vocabulary.iter().enumerate() {
         let mut possible_completion = previous_samples.to_owned();
         possible_completion.push_str(tok);
-
         let possible_input = Input::new(&possible_completion);
 
         let re = Regex::new(pattern).expect("Invalid regex");
@@ -307,6 +338,33 @@ fn naive_mask_from_pattern(vocabulary: &[Token], previous_samples: &str, pattern
     mask
 }
 
+/// Create a mask using the efficient "Indexed FSM" algorithm. See [MaskingAlgorithmConfig::IndexedFSM]
+/// for more info.
+fn mask_from_pattern(
+    model: &mut impl LangModel,
+    map: &HashMap<StateID, HashSet<String>>,
+    current_state: &mut StateID,
+) -> Mask {
+    let mut mask = Mask::zeros(model.vocabulary_size());
+
+    let vocab = model.get_vocabulary();
+
+    for (idx, bit) in mask.inner.iter_mut().enumerate() {
+        if map
+            .get(current_state)
+            .expect("key should exists for all states")
+            .contains(&vocab[idx])
+        {
+            *bit = 1;
+            trace!("state {:?} contains {}", current_state, &vocab[idx]);
+        } else {
+            *bit = 0;
+            trace!("state {:?} does not contain {}", current_state, &vocab[idx]);
+        }
+    }
+    mask
+}
+
 /// Precompute the states map on the given `vocabulary` of tokens.
 ///
 /// **Algorithm 4** from the paper.
@@ -318,6 +376,7 @@ fn map_states_to_vocab(fsm: &dense::DFA<Vec<u32>>, vocabulary: &[Token]) -> Inde
     for token in vocabulary {
         let subsequences = find_subsequences(fsm, token).unwrap();
         for sequence in subsequences {
+            debug_assert!(sequence.len() > 0);
             map.entry(sequence[0])
                 .and_modify(|tokens| {
                     tokens.insert(token.clone());
