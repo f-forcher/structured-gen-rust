@@ -7,6 +7,8 @@ edition = "2021"
 anyhow = "1.0.86"
 regex-automata = "0.4.7"
 rand = {version="0.8.5", features=["small_rng"]} # TODO put it in dev-dependencies after workspace refactor
+clap = { version = "4.5.13", features = ["derive"] }
+log = "0.4.22"
 
 [patch.crates-io]
 # The Rust regex-automata crate has been forked and patched

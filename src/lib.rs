@@ -3,6 +3,7 @@
 */
 
 use anyhow::Result;
+use log::debug;
 use regex_automata::{
     dfa::{dense, Automaton},
     meta::Regex,
@@ -163,6 +164,7 @@ pub trait LangModel {
                     let next_token: String = self.sample_one_token(mask).to_owned();
 
                     if next_token == EOS_TOKEN {
+                        debug!("EOS token received, returning early from stream");
                         break;
                     } else {
                         text_buffer.push_str(&next_token);
@@ -173,10 +175,11 @@ pub trait LangModel {
                 for _i in 0..max_tokens {
                     let mask = naive_mask_from_pattern(self.get_vocabulary(), text_buffer, pattern);
 
-                    println!("naive mask: {:?}", mask);
+                    debug!("naive mask: {mask:?}");
                     let next_token: String = self.sample_one_token(mask).to_owned();
 
                     if next_token == EOS_TOKEN {
+                        debug!("EOS token received, returning early from stream");
                         break;
                     } else {
                         text_buffer.push_str(&next_token);
@@ -187,8 +190,8 @@ pub trait LangModel {
                 let current_state = &mut fsm.current_state;
                 let fsm = fsm.inner;
 
-                println!("Map {:?}", map);
-                println!("State {:?}", current_state);
+                debug!("State index map {:?}", map);
+                debug!("Current state {:?}", current_state);
                 for _i in 0..max_tokens {
                     let mut mask = Mask::zeros(self.vocabulary_size());
 
@@ -201,16 +204,17 @@ pub trait LangModel {
                             .contains(&vocab[idx])
                         {
                             *bit = 1;
-                            println!("state {:?} contains {}", current_state, &vocab[idx]);
+                            debug!("state {:?} contains {}", current_state, &vocab[idx]);
                         } else {
                             *bit = 0;
-                            println!("state {:?} does not contain {}", current_state, &vocab[idx]);
+                            debug!("state {:?} does not contain {}", current_state, &vocab[idx]);
                         }
                     }
 
                     let next_token: String = self.sample_one_token(mask).to_owned();
 
                     if next_token == EOS_TOKEN {
+                        debug!("EOS token received, returning early from stream");
                         break;
                     } else {
                         text_buffer.push_str(&next_token);
@@ -259,7 +263,7 @@ fn naive_mask_from_pattern(vocabulary: &[Token], previous_samples: &str, pattern
         if re.is_match(possible_input) {
             mask.inner[i] = 1;
         } else {
-            //println!("pattern {} does not match completion {}", pattern, possible_completion);
+            debug!("pattern {pattern} does not match completion {possible_completion}");
             mask.inner[i] = 0;
         }
     }
@@ -320,6 +324,6 @@ fn find_subsequences(fsm: &dense::DFA<Vec<u32>>, token: &Token) -> Result<Vec<St
         all_subseqs.push(state_sequence);
     }
 
-    println!("Token {} has subsequences {:?}", token, all_subseqs);
+    debug!("Token {token} has subsequences {all_subseqs:?}");
     Ok(all_subseqs)
 }
