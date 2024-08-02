@@ -1,61 +1,151 @@
 use rand::{rngs::SmallRng, SeedableRng};
-use structured_gen_rust::utils::{ConstsLogitsModel, DeterministicModel, LangModel};
+use structured_gen_rust::{
+    sample_model,
+    util::{ConstsLogitsModel, DeterministicModel},
+    MaskingAlgorithmConfig,
+};
+
+fn small_default_setup() -> (Vec<String>, usize, &'static str) {
+    let tokens = vec!["A", "3", ".", "42", "B", ".2", "1"];
+    let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
+    let max_samples = 15;
+    let pattern = r"^([0-9]*)?\.?[0-9]*$";
+    (vocabulary, max_samples, pattern)
+}
 
 #[test]
-fn unmasked_output() {
-    let tokens = ["A", "3", ".", "42", "B", ".2", "1"];
+fn unmasked() {
+    let (vocabulary, max_samples, _) = small_default_setup();
 
     // DeterministicModel
-    let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
-    let mut determ = DeterministicModel::new(vocabulary);
+    let mut determ = DeterministicModel::new(vocabulary.clone());
 
-    let mut previous_samples = String::new();
-
-    let pattern = None;
-    let out = determ.sample_n_tokens(15, &mut previous_samples, pattern);
+    let out = sample_model(
+        &mut determ,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::NoMasking,
+    )
+    .unwrap();
 
     insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
 
     // ConstsLogitsModel
-    let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
     let rng = SmallRng::seed_from_u64(42);
-    let weights = vec![1.0; vocabulary.len()];
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, &weights[..], rng);
+    let mut const_logits = ConstsLogitsModel::new(vocabulary, rng);
 
-    let mut previous_samples = String::new();
+    let out_rng = sample_model(
+        &mut const_logits,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::NoMasking,
+    )
+    .unwrap();
 
-    let pattern2 = None;
-    let out2 = const_logits.sample_n_tokens(15, &mut previous_samples, pattern2);
-
-    insta::assert_snapshot!(out2, @"3...2423.42A33A.1.2");
+    insta::assert_snapshot!(out_rng, @"3...2423.42A33A.1.2");
 }
 
 #[test]
-fn masked_output() {
-    let tokens = ["A", "3", ".", "42", "B", ".2", "1"];
+fn naive_mask() {
+    // DeterministicModel
+    let (vocabulary, max_samples, pattern) = small_default_setup();
 
-    let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
-    let mut determ = DeterministicModel::new(vocabulary);
+    let mut determ = DeterministicModel::new(vocabulary.clone());
 
-    let mut previous_samples2 = String::new();
-
-    let binding = &String::from(r"^([0-9]*)?\.?[0-9]*$");
-    let pattern = Some(binding);
-    let out = determ.sample_n_tokens(15, &mut previous_samples2, pattern);
+    let out = sample_model(
+        &mut determ,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::Naive(pattern),
+    )
+    .unwrap();
 
     insta::assert_snapshot!(out, @"33.421113342421113");
 
     // ConstsLogitsModel
-    let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
     let rng = SmallRng::seed_from_u64(42);
-    let weights = vec![1.0; vocabulary.len()];
-    let mut const_logits = ConstsLogitsModel::new(vocabulary, &weights[..], rng);
+    let mut const_logits = ConstsLogitsModel::new(vocabulary, rng);
 
-    let mut previous_samples = String::new();
+    let out_rng = sample_model(
+        &mut const_logits,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::Naive(pattern),
+    )
+    .unwrap();
 
-    let binding = &String::from(r"^([0-9]*)?\.?[0-9]*$");
-    let pattern2 = Some(binding);
-    let out2 = const_logits.sample_n_tokens(15, &mut previous_samples, pattern2);
+    insta::assert_snapshot!(out_rng, @"3.3142334233334211");
+}
 
-    insta::assert_snapshot!(out2, @"3.3142334233334211");
+#[test]
+fn indexed_fsm_mask() {
+    let (vocabulary, max_samples, pattern) = small_default_setup();
+
+    // DeterministicModel
+    let mut determ = DeterministicModel::new(vocabulary.clone());
+
+    let out = sample_model(
+        &mut determ,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::IndexedFSM(pattern),
+    )
+    .unwrap();
+
+    insta::assert_snapshot!(out, @"33.421113342421113");
+
+    // ConstsLogitsModel
+    let rng = SmallRng::seed_from_u64(42);
+    let mut const_logits = ConstsLogitsModel::new(vocabulary.clone(), rng);
+
+    let out_rng = sample_model(
+        &mut const_logits,
+        max_samples,
+        "",
+        &MaskingAlgorithmConfig::IndexedFSM(pattern),
+    )
+    .unwrap();
+
+    insta::assert_snapshot!(out_rng, @"3.3142334233334211");
+}
+
+/// Test that the previous input is processed properly. Moreover, check
+/// that once no more token are allowed, the model return less than max tokens.
+#[test]
+fn fsm_with_input_shorter() {
+    let (vocabulary, _, _) = small_default_setup();
+
+    // We can have at most 5 As and 5 Bs, including the ones in the preexisting prompt.
+    let max_samples = 50;
+    let pattern = r"^A{3,5}B{0,5}$";
+    let input_prompt = "AAAA";
+
+    // DeterministicModel
+    let mut determ = DeterministicModel::new(vocabulary.clone());
+
+    let out = sample_model(
+        &mut determ,
+        max_samples,
+        &String::from(input_prompt),
+        &MaskingAlgorithmConfig::IndexedFSM(pattern),
+    )
+    .unwrap();
+
+    assert!(out.len() < max_samples);
+    insta::assert_snapshot!(out, @"AAAAABBBBB");
+
+    // ConstsLogitsModel
+    let rng = SmallRng::seed_from_u64(42);
+    let mut const_logits = ConstsLogitsModel::new(vocabulary.clone(), rng);
+
+    let out_rng = sample_model(
+        &mut const_logits,
+        max_samples,
+        &String::from(input_prompt),
+        &MaskingAlgorithmConfig::IndexedFSM(pattern),
+    )
+    .unwrap();
+
+    assert!(out_rng.len() < max_samples);
+    insta::assert_snapshot!(out_rng, @"AAAAABBBBB");
 }
