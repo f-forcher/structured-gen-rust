@@ -2,6 +2,7 @@
     Utilities for testing structured generation without the overhead of running a "real" Large Language Model.
 */
 
+use log::debug;
 use rand::{
     distributions::{WeightedError, WeightedIndex},
     prelude::Distribution,
@@ -81,6 +82,16 @@ impl LangModel for DeterministicModel {
                 break;
             }
         }
+
+        debug!(
+            "Next tokens allowed: {:?}",
+            mask.inner
+                .iter()
+                .enumerate()
+                .filter(|&(_i, m)| (*m != 0))
+                .map(|(i, _m)| self.get_vocabulary()[i].clone())
+                .collect::<Vec<_>>()
+        );
 
         out_token
     }
