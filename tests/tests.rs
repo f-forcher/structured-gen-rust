@@ -1,7 +1,7 @@
 use rand::{rngs::SmallRng, SeedableRng};
 use structured_gen_rust::{
     sample_model,
-    util::{ConstLogitsModel, DeterministicModel},
+    util::{DeterministicModel, RandomSampleModel},
     MaskingAlgorithmConfig,
 };
 
@@ -30,9 +30,9 @@ fn unmasked() {
 
     insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
 
-    // ConstsLogitsModel
+    // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstLogitsModel::new(vocabulary, rng);
+    let mut const_logits = RandomSampleModel::new(vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -62,9 +62,9 @@ fn naive_mask() {
 
     insta::assert_snapshot!(out, @"33.421113342421113");
 
-    // ConstsLogitsModel
+    // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstLogitsModel::new(vocabulary, rng);
+    let mut const_logits = RandomSampleModel::new(vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -94,9 +94,9 @@ fn indexed_fsm_mask() {
 
     insta::assert_snapshot!(out, @"33.421113342421113");
 
-    // ConstsLogitsModel
+    // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstLogitsModel::new(vocabulary.clone(), rng);
+    let mut const_logits = RandomSampleModel::new(vocabulary.clone(), rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -134,9 +134,9 @@ fn fsm_with_input_shorter() {
     assert!(out.len() < max_samples);
     insta::assert_snapshot!(out, @"AAAAABBBBB");
 
-    // ConstsLogitsModel
+    // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = ConstLogitsModel::new(vocabulary.clone(), rng);
+    let mut const_logits = RandomSampleModel::new(vocabulary.clone(), rng);
 
     let out_rng = sample_model(
         &mut const_logits,
