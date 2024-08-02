@@ -95,13 +95,13 @@ fn main() -> Result<()> {
 
     let output = match cli.model {
         ModelSelector::Deterministic => {
-            let mut model = DeterministicModel::new(vocabulary);
+            let mut model = DeterministicModel::new(&vocabulary);
 
             sample_model(&mut model, max_tokens, &input_prompt, &algo)?
         }
         ModelSelector::RandomSample => {
             let rng = thread_rng();
-            let mut model = RandomSampleModel::new(vocabulary, rng);
+            let mut model = RandomSampleModel::new(&vocabulary, rng);
 
             sample_model(&mut model, max_tokens, &input_prompt, &algo)?
         }

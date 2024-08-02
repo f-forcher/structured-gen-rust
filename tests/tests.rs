@@ -18,7 +18,7 @@ fn unmasked() {
     let (vocabulary, max_samples, _) = small_default_setup();
 
     // DeterministicModel
-    let mut determ = DeterministicModel::new(vocabulary.clone());
+    let mut determ = DeterministicModel::new(&vocabulary);
 
     let out = sample_model(
         &mut determ,
@@ -32,7 +32,7 @@ fn unmasked() {
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = RandomSampleModel::new(vocabulary, rng);
+    let mut const_logits = RandomSampleModel::new(&vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -50,7 +50,7 @@ fn naive_mask() {
     // DeterministicModel
     let (vocabulary, max_samples, pattern) = small_default_setup();
 
-    let mut determ = DeterministicModel::new(vocabulary.clone());
+    let mut determ = DeterministicModel::new(&vocabulary);
 
     let out = sample_model(
         &mut determ,
@@ -64,7 +64,7 @@ fn naive_mask() {
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = RandomSampleModel::new(vocabulary, rng);
+    let mut const_logits = RandomSampleModel::new(&vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -82,7 +82,7 @@ fn indexed_fsm_mask() {
     let (vocabulary, max_samples, pattern) = small_default_setup();
 
     // DeterministicModel
-    let mut determ = DeterministicModel::new(vocabulary.clone());
+    let mut determ = DeterministicModel::new(&vocabulary);
 
     let out = sample_model(
         &mut determ,
@@ -96,7 +96,7 @@ fn indexed_fsm_mask() {
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = RandomSampleModel::new(vocabulary.clone(), rng);
+    let mut const_logits = RandomSampleModel::new(&vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
@@ -121,7 +121,7 @@ fn fsm_with_input_shorter() {
     let input_prompt = "AAAA";
 
     // DeterministicModel
-    let mut determ = DeterministicModel::new(vocabulary.clone());
+    let mut determ = DeterministicModel::new(&vocabulary);
 
     let out = sample_model(
         &mut determ,
@@ -136,7 +136,7 @@ fn fsm_with_input_shorter() {
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
-    let mut const_logits = RandomSampleModel::new(vocabulary.clone(), rng);
+    let mut const_logits = RandomSampleModel::new(&vocabulary, rng);
 
     let out_rng = sample_model(
         &mut const_logits,
