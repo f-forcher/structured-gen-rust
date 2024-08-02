@@ -265,7 +265,7 @@ fn sample_multiple_naive(
 
 /// Sample using the efficient indexing FSM algorithm. See [MaskingAlgorithmConfig::IndexedFSM]
 /// for more info.
-fn sample_multiple_with_indexed_fsm(
+fn sample_multiple_indexed_fsm(
     model: &mut impl LangModel,
     mut fsm: Box<StatefulFSM>,
     map: &HashMap<StateID, HashSet<String>>,
