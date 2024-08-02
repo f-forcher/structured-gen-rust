@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+use log::trace;
 use rand::thread_rng;
 use structured_gen_rust::{
     sample_model,
@@ -25,6 +26,8 @@ struct Cli {
     ///
     /// If not present, the default vocabulary ["A", "3", ".", "42", "B", ".2", "1"]
     /// will be used.
+    ///
+    /// If set, it overrides the --gen-vocab option.
     #[arg(short, long, value_parser, num_args = 1.., value_delimiter = ' ')]
     vocab: Option<Vec<String>>,
 
@@ -42,6 +45,17 @@ struct Cli {
     /// The max amount of tokens to produce
     #[arg(short, long, default_value_t = 15)]
     n_tokens: usize,
+
+    /// You can set this to generate a vocabulary with `usize` tokens inside.
+    ///
+    /// The dictionary consists of the
+    /// single chars `a-z A-Z 0-9 . : , ! ?` and every multiple char cartesian
+    /// product combination of these, generating up to `gen_vocab` tokens.
+    ///
+    /// If neither this or `--vocab` is set, the default vocabulary will be used
+    /// (see `--vocab` for more details).
+    #[arg(short, long)]
+    gen_vocab: Option<usize>,
 }
 
 fn default_small_dict() -> Vec<String> {
@@ -82,7 +96,13 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
-    let vocabulary = cli.vocab.unwrap_or_else(default_small_dict);
+    let vocabulary = match (cli.vocab, cli.gen_vocab) {
+        (Some(vocab), Some(_)) => vocab,
+        (Some(vocab), None) => vocab,
+        (None, None) => default_small_dict(),
+        (None, Some(gen_tokens)) => generate_dict(gen_tokens),
+    };
+
     let input_prompt = cli.input;
     let pattern = &cli.pattern[..];
     let max_tokens = cli.n_tokens;
@@ -107,9 +127,9 @@ fn main() -> Result<()> {
         }
     };
 
-    println!("Model output: \"{output}\"");
+    trace!("Vocabulary: {vocabulary:?}");
 
-    println!("Test dict gen: \"{:?}\"", generate_dict(10000));
+    println!("Model output: \"{output}\"");
 
     Ok(())
 }
