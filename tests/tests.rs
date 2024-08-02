@@ -13,13 +13,12 @@ fn small_default_setup() -> (Vec<String>, usize, &'static str) {
     (vocabulary, max_samples, pattern)
 }
 
-// Function to pretty print combinations with 20 values per row
-fn print_combinations(combinations: Vec<String>, values_per_row: usize) -> String
-{
+// Function to pretty print long dicts
+fn print_combinations(combinations: Vec<String>, values_per_row: usize) -> String {
     let mut out = String::new();
     let mut count = 0;
     for combination in combinations {
-        out.push_str(&format!("{:>4}", combination)); 
+        out.push_str(&format!("{}, ", combination));
         count += 1;
         if count % values_per_row == 0 {
             out.push_str("\n");
@@ -169,24 +168,23 @@ fn fsm_with_input_shorter() {
     insta::assert_snapshot!(out_rng, @"AAAAABBBBB");
 }
 
-
 #[test]
 fn test_generate_dict() {
     let max_tokens = 200;
 
     let tokens = generate_dict(max_tokens);
-    
+
     let out = print_combinations(tokens, 20);
     insta::assert_snapshot!(out, @r###"
-       a   b   c   d   e   f   g   h   i   j   k   l   m   n   o   p   q   r   s   t
-       u   v   w   x   y   z   A   B   C   D   E   F   G   H   I   J   K   L   M   N
-       O   P   Q   R   S   T   U   V   W   X   Y   Z   0   1   2   3   4   5   6   7
-       8   9   .   ;   ,   !   ?  aa  ab  ac  ad  ae  af  ag  ah  ai  aj  ak  al  am
-      an  ao  ap  aq  ar  as  at  au  av  aw  ax  ay  az  aA  aB  aC  aD  aE  aF  aG
-      aH  aI  aJ  aK  aL  aM  aN  aO  aP  aQ  aR  aS  aT  aU  aV  aW  aX  aY  aZ  a0
-      a1  a2  a3  a4  a5  a6  a7  a8  a9  a.  a;  a,  a!  a?  ba  bb  bc  bd  be  bf
-      bg  bh  bi  bj  bk  bl  bm  bn  bo  bp  bq  br  bs  bt  bu  bv  bw  bx  by  bz
-      bA  bB  bC  bD  bE  bF  bG  bH  bI  bJ  bK  bL  bM  bN  bO  bP  bQ  bR  bS  bT
-      bU  bV  bW  bX  bY  bZ  b0  b1  b2  b3  b4  b5  b6  b7  b8  b9  b.  b;  b,  b!
+    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, 
+    u, v, w, x, y, z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, 
+    O, P, Q, R, S, T, U, V, W, X, Y, Z, 0, 1, 2, 3, 4, 5, 6, 7, 
+    8, 9, ., ;, ,, !, ?, aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, 
+    an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, 
+    aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a0, 
+    a1, a2, a3, a4, a5, a6, a7, a8, a9, a., a;, a,, a!, a?, ba, bb, bc, bd, be, bf, 
+    bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bs, bt, bu, bv, bw, bx, by, bz, 
+    bA, bB, bC, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM, bN, bO, bP, bQ, bR, bS, bT, 
+    bU, bV, bW, bX, bY, bZ, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b., b;, b,, b!, 
     "###);
 }
