@@ -89,8 +89,8 @@ impl LangModel for DeterministicModel {
     fn sample_one_token(&mut self, mask: Mask) -> &str {
         let mut out_token = EOS_TOKEN;
 
-        for i in 1..self.vocabulary_size() {
-            let cyclic_idx = (self.idx + i) % self.vocabulary_size();
+        for i in 0..self.vocabulary_size() {
+            let cyclic_idx = (self.idx + i + 1) % self.vocabulary_size();
             if mask.inner[cyclic_idx] != 0 {
                 out_token = &self.vocabulary[cyclic_idx];
                 self.idx = cyclic_idx % self.vocabulary_size();

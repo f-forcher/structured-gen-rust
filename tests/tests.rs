@@ -21,12 +21,12 @@ fn print_combinations(combinations: Vec<String>, values_per_row: usize) -> Strin
         out.push_str(&format!("{}, ", combination));
         count += 1;
         if count % values_per_row == 0 {
-            out.push_str("\n");
+            out.push('\n');
         }
     }
 
     if count % values_per_row != 0 {
-        out.push_str("\n");
+        out.push('\n');
     }
     out
 }
@@ -46,7 +46,7 @@ fn unmasked() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
+    insta::assert_snapshot!(out, @"3.42B.21A3.42B.21A3");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -78,7 +78,7 @@ fn naive_mask() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"33.421113342421113");
+    insta::assert_snapshot!(out, @"3.421342134213421342");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -110,7 +110,7 @@ fn indexed_fsm_mask() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"33.421113342421113");
+    insta::assert_snapshot!(out, @"3.421342134213421342");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -150,7 +150,7 @@ fn fsm_with_input_shorter() {
     .unwrap();
 
     assert!(out.len() < max_samples);
-    insta::assert_snapshot!(out, @"AAAAABBBBB");
+    insta::assert_snapshot!(out, @"AAAABBBBB");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
