@@ -50,6 +50,17 @@ impl<R: Rng> LangModel for RandomSampleModel<R> {
             Err(WeightedError::AllWeightsZero) => return EOS_TOKEN,
             _ => todo!("error handling"),
         };
+
+        debug!(
+            "Next tokens allowed: {:?}",
+            mask.inner
+                .iter()
+                .enumerate()
+                .filter(|&(_i, m)| (*m != 0))
+                .map(|(i, _m)| self.get_vocabulary()[i].clone())
+                .collect::<Vec<_>>()
+        );
+
         &self.vocabulary[self.dist.sample(&mut self.rng)]
     }
 
@@ -79,10 +90,10 @@ impl LangModel for DeterministicModel {
         let mut out_token = EOS_TOKEN;
 
         for i in 0..self.vocabulary_size() {
-            let cyclic_idx = (self.idx + i) % self.vocabulary_size();
+            let cyclic_idx = (self.idx + i + 1) % self.vocabulary_size();
             if mask.inner[cyclic_idx] != 0 {
                 out_token = &self.vocabulary[cyclic_idx];
-                self.idx = (self.idx + 1) % self.vocabulary_size();
+                self.idx = cyclic_idx % self.vocabulary_size();
                 break;
             }
         }
@@ -103,4 +114,40 @@ impl LangModel for DeterministicModel {
     fn get_vocabulary(&self) -> &[Token] {
         &self.vocabulary
     }
+}
+
+/// Helper function to generate a dictionary with up to num_tokens,
+/// for testing and benchmarking. The dictionary consists of the
+/// single chars a-z A-Z 0-9 . : , ! ? and every multiple char
+/// combination of these, up to `num_tokens`.
+pub fn generate_dict(num_tokens: usize) -> Vec<Token> {
+    // Create a vector to hold the characters
+    let mut chars: Vec<String> = Vec::new();
+
+    for c in 'a'..='z' {
+        chars.push(c.to_string());
+    }
+    for c in 'A'..='Z' {
+        chars.push(c.to_string());
+    }
+    for c in '0'..='9' {
+        chars.push(c.to_string());
+    }
+    let punctuation = ['.', ';', ',', '!', '?'];
+    for &c in &punctuation {
+        chars.push(c.to_string());
+    }
+
+    chars
+        .clone()
+        .into_iter()
+        .chain(chars.iter().flat_map(|prefix| {
+            chars.iter().map(|suffix| {
+                let mut new_string = prefix.clone();
+                new_string.push_str(suffix);
+                new_string
+            })
+        }))
+        .take(num_tokens)
+        .collect()
 }

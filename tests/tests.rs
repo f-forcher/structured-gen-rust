@@ -1,7 +1,7 @@
 use rand::{rngs::SmallRng, SeedableRng};
 use structured_gen_rust::{
     sample_model,
-    util::{DeterministicModel, RandomSampleModel},
+    util::{generate_dict, DeterministicModel, RandomSampleModel},
     MaskingAlgorithmConfig,
 };
 
@@ -11,6 +11,24 @@ fn small_default_setup() -> (Vec<String>, usize, &'static str) {
     let max_samples = 15;
     let pattern = r"^([0-9]*)?\.?[0-9]*$";
     (vocabulary, max_samples, pattern)
+}
+
+// Function to pretty print long dicts
+fn print_combinations(combinations: Vec<String>, values_per_row: usize) -> String {
+    let mut out = String::new();
+    let mut count = 0;
+    for combination in combinations {
+        out.push_str(&format!("{}, ", combination));
+        count += 1;
+        if count % values_per_row == 0 {
+            out.push('\n');
+        }
+    }
+
+    if count % values_per_row != 0 {
+        out.push('\n');
+    }
+    out
 }
 
 #[test]
@@ -28,7 +46,7 @@ fn unmasked() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
+    insta::assert_snapshot!(out, @"3.42B.21A3.42B.21A3");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -60,7 +78,7 @@ fn naive_mask() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"33.421113342421113");
+    insta::assert_snapshot!(out, @"3.421342134213421342");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -92,7 +110,7 @@ fn indexed_fsm_mask() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"33.421113342421113");
+    insta::assert_snapshot!(out, @"3.421342134213421342");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -132,7 +150,7 @@ fn fsm_with_input_shorter() {
     .unwrap();
 
     assert!(out.len() < max_samples);
-    insta::assert_snapshot!(out, @"AAAAABBBBB");
+    insta::assert_snapshot!(out, @"AAAABBBBB");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -148,4 +166,25 @@ fn fsm_with_input_shorter() {
 
     assert!(out_rng.len() < max_samples);
     insta::assert_snapshot!(out_rng, @"AAAAABBBBB");
+}
+
+#[test]
+fn test_generate_dict() {
+    let max_tokens = 200;
+
+    let tokens = generate_dict(max_tokens);
+
+    let out = print_combinations(tokens, 20);
+    insta::assert_snapshot!(out, @r###"
+    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, 
+    u, v, w, x, y, z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, 
+    O, P, Q, R, S, T, U, V, W, X, Y, Z, 0, 1, 2, 3, 4, 5, 6, 7, 
+    8, 9, ., ;, ,, !, ?, aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, 
+    an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, 
+    aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a0, 
+    a1, a2, a3, a4, a5, a6, a7, a8, a9, a., a;, a,, a!, a?, ba, bb, bc, bd, be, bf, 
+    bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bs, bt, bu, bv, bw, bx, by, bz, 
+    bA, bB, bC, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM, bN, bO, bP, bQ, bR, bS, bT, 
+    bU, bV, bW, bX, bY, bZ, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b., b;, b,, b!, 
+    "###);
 }

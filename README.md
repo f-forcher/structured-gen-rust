@@ -32,7 +32,7 @@ Usage: structured-gen-rust [OPTIONS]
 Options:
   -m, --model <MODEL>
           Name of language model to use. At the moment only "mock" options are available
-          
+
           [default: random-sample]
 
           Possible values:
@@ -43,48 +43,46 @@ Options:
           [default: indexed-fsm]
 
           Possible values:
-
-          - no-masking:  Do not perform structured generation, 
-            mask will allow all tokens
-          - naive:       Use naive `O(N)` pattern matching algorithm, i.e. check for each 
-            token if the resulting completed output would still validate the pattern
-          - indexed-fsm: The algorithm from the paper 
-            [Efficient Guided Generation for Large Language Models](https://arxiv.org/abs/2307.09702), 
-            precomputing the token vocabulary with a hashmap from the pattern 
-            FSM states to valid tokens. 
-            The masking step is now O(1), indepentent of the current output sequence length
-
+          - no-masking:  Do not perform structured generation, mask will allow all tokens
+          - naive:       Use naive `O(N)` pattern matching algorithm, i.e. check for each token if the 
+          resulting completed output would still validate the pattern
+          - indexed-fsm: The algorithm from the paper [Efficient Guided Generation for Large Language Models](https://arxiv.org/abs/2307.09702), 
+          precomputing the token vocabulary with a hashmap from the pattern FSM states to valid tokens. 
+          The masking step is now O(1), indepentent of the current output sequence length
 
   -v, --vocab <VOCAB>...
           The model vocabulary as a space separated list of words. Example:
-          
-          -v A B 3 ...
-          
 
-          If not present, the default vocabulary 
-          ["A", "3", ".", "42", "B", ".2", "1"] will be used.
+          -v A B 3 ...
+
+          If not present, the default vocabulary ["A", "3", ".", "42", "B", ".2", "1"] will be used.
+
+          If set, it overrides the --gen-vocab option.
 
   -i, --input <INPUT>
-          The input prompt to the model. Keep in mind that the 
-          whole text completion including the prompt, 
-          must conform to the pattern. The default is an empty string
+          The input prompt to the model. Keep in mind that the whole text completion including the 
+          prompt, must conform to the pattern. The default is an empty string
 
-          
           [default: ]
 
   -p, --pattern <PATTERN>
+          The regex pattern to which the model output should conform. Usually you want to anchor 
+          it at both ends, i.e. `^...$`. Default is the float regex `^([0-9]*)?\.?[0-9]*$`
 
-          The regex pattern according to which the model output should conform. 
-          Usually you want to anchor it at both ends, i.e. `^...$`. Default is 
-          the float regex `^([0-9]*)?\.?[0-9]*$`
-
-          
           [default: ^([0-9]*)?\.?[0-9]*$]
 
   -n, --n-tokens <N_TOKENS>
           The max amount of tokens to produce
-          
+
           [default: 15]
+
+  -g, --gen-vocab <GEN_VOCAB>
+          You can set this to generate a vocabulary with `usize` tokens inside.
+
+          The dictionary consists of the single chars `a-z A-Z 0-9 . : , ! ?` and every multiple 
+          char cartesian product combination of these, generating up to `gen_vocab` tokens.
+
+          If neither this or `--vocab` is set, the default vocabulary will be used (see `--vocab` for more details).
 
   -h, --help
           Print help (see a summary with '-h')
@@ -117,3 +115,27 @@ about 0.04 seconds (on my machine):
     ```
     time cargo run --release -- -m deterministic -a indexed-fsm -n 10000 -v A B 3 . 45
     ```
+
+## Benchmarks
+Benchmarks can be run by using the command `cargo bench`. 
+In `target/criterion/report/index.html` an HTML plot will be generated
+containing several plots and statistics.
+
+## Debug and logs
+Debug logs can be enabled by running with a debug profile (i.e. `cargo run` without the `--release` flag) and setting the `RUST_LOG` env variable.
+
+The log levels are, in order: `error`, `warn`, `info`, `debug`, `trace`.
+Set the `RUST_LOG` env variable to one of them to enable more (or
+less) detailed logging. Example:
+
+```
+RUST_LOG=debug cargo run -- -m deterministic -a indexed-fsm -g 500 -n 500
+```
+
+## Notes
+The `regex-automata` public API does not expose the internal states
+of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made and its internals exposed.
+
+## Known issues
+Using very large dictionaries may result in failure to produce the right output. The issue seems to be deterministic and independent of the
+specific struct-gen algo used, only depending on the dictionary size. It could be connected to the `regex` crate internal implementation of FSM states.

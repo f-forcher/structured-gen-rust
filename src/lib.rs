@@ -328,9 +328,9 @@ fn naive_mask_from_pattern(vocabulary: &[Token], previous_samples: &str, pattern
 
         let re = Regex::new(pattern).expect("Invalid regex");
         if re.is_match(possible_input) {
+            trace!("pattern {pattern} matches completion {possible_completion}");
             mask.inner[i] = 1;
         } else {
-            trace!("pattern {pattern} does not match completion {possible_completion}");
             mask.inner[i] = 0;
         }
     }
@@ -419,6 +419,6 @@ fn find_subsequences(fsm: &dense::DFA<Vec<u32>>, token: &Token) -> Result<Vec<St
         all_subseqs.push(state_sequence);
     }
 
-    debug!("Token {token} has subsequences {all_subseqs:?}");
+    trace!("Token {token} has subsequences {all_subseqs:?}");
     Ok(all_subseqs)
 }
