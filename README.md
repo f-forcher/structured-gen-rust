@@ -43,6 +43,7 @@ Options:
           [default: indexed-fsm]
 
           Possible values:
+
           - no-masking:  Do not perform structured generation, 
             mask will allow all tokens
           - naive:       Use naive `O(N)` pattern matching algorithm, i.e. check for each 
@@ -53,11 +54,13 @@ Options:
             FSM states to valid tokens. 
             The masking step is now O(1), indepentent of the current output sequence length
 
+
   -v, --vocab <VOCAB>...
           The model vocabulary as a space separated list of words. Example:
           
           -v A B 3 ...
           
+
           If not present, the default vocabulary 
           ["A", "3", ".", "42", "B", ".2", "1"] will be used.
 
@@ -65,13 +68,16 @@ Options:
           The input prompt to the model. Keep in mind that the 
           whole text completion including the prompt, 
           must conform to the pattern. The default is an empty string
+
           
           [default: ]
 
   -p, --pattern <PATTERN>
+
           The regex pattern according to which the model output should conform. 
           Usually you want to anchor it at both ends, i.e. `^...$`. Default is 
           the float regex `^([0-9]*)?\.?[0-9]*$`
+
           
           [default: ^([0-9]*)?\.?[0-9]*$]
 
