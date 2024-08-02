@@ -43,24 +43,41 @@ Options:
           [default: indexed-fsm]
 
           Possible values:
-          - no-masking:  Do not perform structured generation, mask will allow all tokens
-          - naive:       Use naive `O(N)` pattern matching algorithm, i.e. check for each token if the resulting completed output would still validate the pattern
-          - indexed-fsm: The algorithm from the paper [Efficient Guided Generation for Large Language Models](https://arxiv.org/abs/2307.09702), precomputing the token vocabulary with a hashmap from the pattern FSM states to valid tokens. The masking step is now O(1), indepentent of the current output sequence length
+
+          - no-masking:  Do not perform structured generation, 
+            mask will allow all tokens
+          - naive:       Use naive `O(N)` pattern matching algorithm, i.e. check for each 
+            token if the resulting completed output would still validate the pattern
+          - indexed-fsm: The algorithm from the paper 
+            [Efficient Guided Generation for Large Language Models](https://arxiv.org/abs/2307.09702), 
+            precomputing the token vocabulary with a hashmap from the pattern 
+            FSM states to valid tokens. 
+            The masking step is now O(1), indepentent of the current output sequence length
+
 
   -v, --vocab <VOCAB>...
           The model vocabulary as a space separated list of words. Example:
           
           -v A B 3 ...
           
-          If not present, the default vocabulary ["A", "3", ".", "42", "B", ".2", "1"] will be used.
+
+          If not present, the default vocabulary 
+          ["A", "3", ".", "42", "B", ".2", "1"] will be used.
 
   -i, --input <INPUT>
-          The input prompt to the model. Keep in mind that the whole text completion including the prompt, must conform to the pattern. The default is an empty string
+          The input prompt to the model. Keep in mind that the 
+          whole text completion including the prompt, 
+          must conform to the pattern. The default is an empty string
+
           
           [default: ]
 
   -p, --pattern <PATTERN>
-          The regex pattern according to which the model output should conform. Usually you want to anchor it at both ends, i.e. `^...$`. Default is the float regex `^([0-9]*)?\.?[0-9]*$`
+
+          The regex pattern according to which the model output should conform. 
+          Usually you want to anchor it at both ends, i.e. `^...$`. Default is 
+          the float regex `^([0-9]*)?\.?[0-9]*$`
+
           
           [default: ^([0-9]*)?\.?[0-9]*$]
 
@@ -91,12 +108,12 @@ Options:
 - Time the generation of up to 10000 tokens using the deterministic mock language model and the naive algorithm, with a custom token vocabulary. This takes about 1.5 seconds on my machine:
 
     ```
-    time cargo run --release -- -m deterministic -a naive -n 5000 -v A B 3 . 45
+    time cargo run --release -- -m deterministic -a naive -n 10000 -v A B 3 . 45
     ```
 
 - Now compare with the same command but using the efficient algorithm `indexed-fsm`. Now it is just
 about 0.04 seconds (on my machine):
 
     ```
-    time cargo run --release -- -m deterministic -a indexed-fsm -n 5000 -v A B 3 . 45
+    time cargo run --release -- -m deterministic -a indexed-fsm -n 10000 -v A B 3 . 45
     ```
