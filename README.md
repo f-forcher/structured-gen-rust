@@ -1,7 +1,7 @@
-# Efficient structured generation from Large Language Models
+# Efficient Guided Generation for Large Language Models
 ![example branch parameter](https://github.com/f-forcher/structured-gen-rust/actions/workflows/rust-tests.yml/badge.svg)
 
-A proof-of-concept Rust implementation of the algorithm from "Efficient structured generation for LLMs" paper.
+A proof-of-concept Rust implementation of the algorithm from ["Efficient Guided generation for LLMs"](https://arxiv.org/abs/2307.09702) paper.
 
 # How to run
 A small CLI application is provided to test the algorithm. You can either run it locally, inside a devcontainer, 
@@ -98,7 +98,7 @@ Options:
 ```
 
 ## Examples:
-- Get help locally:
+- Get help locally (or in a devcontainer shell):
     ```
     cargo run --release -- --help
     ```
