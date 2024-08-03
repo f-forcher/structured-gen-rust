@@ -1,17 +1,23 @@
 # Efficient structured generation from Large Language Models
 ![example branch parameter](https://github.com/f-forcher/structured-gen-rust/actions/workflows/rust-tests.yml/badge.svg)
 
-A proof-of-concept Rust implementation of the core algorithm from "Efficient structured generation for LLMs" paper.
+A proof-of-concept Rust implementation of the algorithm from "Efficient structured generation for LLMs" paper.
 
 # How to run
-A small CLI application is provided to test the algorithm. You can either run it locally, or by using Docker.
+A small CLI application is provided to test the algorithm. You can either run it locally, inside a devcontainer, 
+or by using Docker directly.
 
-### Locally
+### Local
 - If you haven't yet, [install rust](https://www.rust-lang.org/tools/install).
-- Run the following command. The options are described below in the [Commands and options](#commands) section.
+- Run the following command. Use the `--help` option to see a list of possible args to configure or see below
+  the [Arguments](#arguments) section.
     ```
     cargo run --release -- <OPTIONS>
     ```
+
+### Devcontainer
+- If [devcontainer](https://code.visualstudio.com/docs/devcontainers/devcontainer-cli) is installed in your IDE, you can
+  open this repository in the container, wait for the image to build, then just run `cargo` commands as shown in [Local](#local) section.
 
 ### Docker
 - Build the image 
@@ -23,7 +29,7 @@ A small CLI application is provided to test the algorithm. You can either run it
     docker run -it --rm --name structured-gen structured-gen <OPTIONS>
     ```
 
-## Commands and options
+# Arguments
 You can use the `--help` option to get a list of the possible commands:
 
 ```
@@ -91,7 +97,7 @@ Options:
           Print version
 ```
 
-### Examples:
+## Examples:
 - Get help locally:
     ```
     cargo run --release -- --help
@@ -116,12 +122,12 @@ about 0.04 seconds (on my machine):
     time cargo run --release -- -m deterministic -a indexed-fsm -n 10000 -v A B 3 . 45
     ```
 
-## Benchmarks
+# Benchmarks
 Benchmarks can be run by using the command `cargo bench`. 
 In `target/criterion/report/index.html` an HTML plot will be generated
 containing several plots and statistics.
 
-## Debug and logs
+# Logging and debugging
 Debug logs can be enabled by running with a debug profile (i.e. `cargo run` without the `--release` flag) and setting the `RUST_LOG` env variable.
 
 The log levels are, in order: `error`, `warn`, `info`, `debug`, `trace`.
@@ -132,9 +138,11 @@ less) detailed logging. Example:
 RUST_LOG=debug cargo run -- -m deterministic -a indexed-fsm -g 500 -n 500
 ```
 
-## Notes
+# Notes
+## `regex` fork
 The `regex-automata` public API does not expose the internal states
-of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made and its internals exposed.
+of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made 
+and its internal `State` API exposed.
 
 ## Known issues
 Using very large dictionaries may result in failure to produce the right output. The issue seems to be deterministic and independent of the
