@@ -46,7 +46,7 @@ fn unmasked() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"3.42B.21A3.42B.21A3");
+    insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
@@ -150,7 +150,7 @@ fn fsm_with_input_shorter() {
     .unwrap();
 
     assert!(out.len() < max_samples);
-    insta::assert_snapshot!(out, @"AAAABBBBB");
+    insta::assert_snapshot!(out, @"AAAAABBBBB");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);

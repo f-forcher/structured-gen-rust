@@ -302,7 +302,7 @@ fn sample_multiple_indexed_fsm(
 
         if next_token == EOS_TOKEN {
             info!(
-                "EOS token received returning earky: Generated {i} out of {max_tokens} max allowed"
+                "EOS token received returning early: Generated {i} out of {max_tokens} max allowed"
             );
             break;
         } else {

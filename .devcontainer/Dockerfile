@@ -27,6 +27,10 @@ USER $USERNAME
 
 RUN export DEBIAN_FRONTEND=noninteractive
 
+# Install cargo nextest and insta
+RUN curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin \
+    && curl -LsSf https://insta.rs/install.sh | sh
+
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
