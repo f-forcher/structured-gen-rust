@@ -6,7 +6,7 @@ use structured_gen_rust::{
 };
 
 fn small_default_setup() -> (Vec<String>, usize, &'static str) {
-    let tokens = vec!["A", "3", ".", "42", "B", ".2", "1"];
+    let tokens = vec!["A", "3", ".", "42", "B", ".2", "1", "0a", "1b", "a."];
     let vocabulary: Vec<String> = tokens.into_iter().map(|s| s.to_owned()).collect();
     let max_samples = 15;
     let pattern = r"^([0-9]*)?\.?[0-9]*$";
@@ -46,7 +46,7 @@ fn unmasked() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out, @"A3.42B.21A3.42B.21A");
+    insta::assert_snapshot!(out, @"A3.42B.210a1ba.A3.42B");
 
     // RandomSampleModel
     let rng = SmallRng::seed_from_u64(42);
