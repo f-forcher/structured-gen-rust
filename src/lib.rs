@@ -397,24 +397,16 @@ fn find_subsequences(fsm: &dense::DFA<Vec<u32>>, token: &Token) -> Result<Vec<St
         let mut state_sequence: StateSequence = vec![];
         let mut curr_state = state.id();
 
-        // Only keep the states that read token[0]
-        let peek_next = fsm.next_state(curr_state, token.as_bytes()[0]);
-        if fsm.is_special_state(peek_next)
-            && (fsm.is_dead_state(peek_next) || fsm.is_quit_state(peek_next))
-        {
-            continue 'states_loop;
-        }
-
         // Walk the FSM
         for &b in token.as_bytes() {
+            state_sequence.push(curr_state);
+            curr_state = fsm.next_state(curr_state, b);
             if fsm.is_special_state(curr_state)
                 && (fsm.is_dead_state(curr_state) || fsm.is_quit_state(curr_state))
             {
+                state_sequence.clear();
                 continue 'states_loop;
             }
-            state_sequence.push(curr_state);
-
-            curr_state = fsm.next_state(curr_state, b);
         }
         all_subseqs.push(state_sequence);
     }
