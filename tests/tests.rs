@@ -60,7 +60,7 @@ fn unmasked() {
     )
     .unwrap();
 
-    insta::assert_snapshot!(out_rng, @"3...2423.42A33A.1.2");
+    insta::assert_snapshot!(out_rng, @"342.0a.2342BA..A421b0a");
 }
 
 #[test]
