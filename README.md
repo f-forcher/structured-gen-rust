@@ -143,7 +143,3 @@ RUST_LOG=debug cargo run -- -m deterministic -a indexed-fsm -g 500 -n 500
 The `regex-automata` public API does not expose the internal states
 of the automata, so a [fork](https://github.com/f-forcher/regex/tree/expose-state-iter) of the Rust stdlib `regex` repo has been made 
 and its internal `State` API exposed.
-
-## Known issues
-Using very large dictionaries may result in failure to produce the right output. The issue seems to be deterministic and independent of the
-specific struct-gen algo used, only depending on the dictionary size. It could be connected to the `regex` crate internal implementation of FSM states.
