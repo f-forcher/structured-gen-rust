@@ -3,6 +3,10 @@
 
 A proof-of-concept Rust implementation of the algorithm from ["Efficient Guided generation for LLMs"](https://arxiv.org/abs/2307.09702) paper.
 
+## What is it
+This proof of concept demonstrates efficient $O(1)$ structured sampling from a regular grammar format from an LLM. This helps
+in constructing reliable and efficient AI agents communicating through standardized formats, without resorting to "beg" them in custom prompts.
+
 # How to run
 A small CLI application is provided to test the algorithm. You can either run it locally, inside a devcontainer, 
 or by using Docker directly.
