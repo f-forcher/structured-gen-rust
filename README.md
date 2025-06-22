@@ -5,7 +5,8 @@ A proof-of-concept Rust implementation of the algorithm from ["Efficient Guided 
 
 ## What is it
 This proof of concept demonstrates efficient $O(1)$ structured sampling from a regular grammar format from an LLM. This helps
-in constructing reliable and efficient AI agents communicating through standardized formats, without resorting to "beg" them in custom prompts.
+in constructing reliable and efficient AI agents communicating through standardized formats, without resorting to unreliable custom prompts that can only return
+a probabilistic output rather than a hard guarantee.
 
 # How to run
 A small CLI application is provided to test the algorithm. You can either run it locally, inside a devcontainer, 
